@@ -1,35 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css"; // Import custom styles
-import avatar from  "./assets/avatar.png"; // Import image asset
+import avatar from "./assets/avatar.png"; // Import image asset
 
 function App() {
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "¡Hola! Soy tu asistente Virtual de Servicio Tecnico. Cuéntame ¿cual es tu nombre? " },
+    { sender: "bot", text: "¡Hola! Soy tu asistente virtual especializado en sistemas de información. ¿Cómo te llamas?" },
   ]);
   const [newMessage, setNewMessage] = useState("");
   const [currentStep, setCurrentStep] = useState("personName");
   const [responses, setResponses] = useState<string[]>([]);
-  const messagesEndRef = useRef(null);
-  const Hours : Record<number,string> = {1: "10 AM - 12 PM", 2: "12 PM - 2 PM", 3: "2 PM - 4 PM"};
-  
+  const messagesEndRef = useRef<null | HTMLDivElement>(null); 
 
   const predefinedOptions = {
-    day: [
-      "¿Qué día prefieres para la visita de nuestro personal de servicio técnico?",
-      "Opciones: Lunes, Martes, Miércoles, Jueves, Viernes, Sábado",
+    systemType: [
+      "¿En qué tipo de sistema de información estás interesado? Por ejemplo: ERP, CRM, Sistemas de Gestión Académica, etc.",
     ],
-    dayConfirmation: ["El día seleccionado es {day}, ¿Es correcto?  por favor responde si o no."],
-    hourConfirmation: ["La franja horaria seleccionada es {hour}, ¿Es correcto? por favor responde si o no."],
-    addressConfirmation: ["La dirección ingresada es {address}, ¿Es correcto? por favor responde si o no."],
-    identificationConfirmation: ["El número de documento ingresado es {id}, ¿Es correcto? por favor responde si o no."],
-    hour: [
-      "¡Perfecto! ¿Qué horario prefieres? Selecciona una franja horaria.",
-      "Opciones: \n1. 10 AM - 12 PM\n2. 12 PM - 2 PM\n3. 2 PM - 4 PM",
+    requirements: [
+      "¿Cuáles son las principales necesidades o procesos que necesitas cubrir con el sistema de información?",
     ],
-    address: ["Excelente, por favor ingresa la dirección de tu hogar."],
-    identification: ["¡Hola! {name} para verificar tu identidad por favor, ingrese su número de documento."],
-    confirmation: ["Quieres programar la visita el dia " + responses[1] + " en la franja " + responses[2] + " en la dirección " + responses[3] + " ¿Es correcto? por favor responde si o no."],
-    default: ["Lo siento, no entendí eso. Por favor, elige una opción válida."],
+    budget: [
+      "¿Tienes un presupuesto estimado para la implementación del sistema?",
+    ],
+    platform: [
+      "¿Prefieres un sistema basado en la nube o uno que puedas instalar localmente?",
+    ],
+    confirmation: [
+      "Para confirmar, estás interesado en un sistema {systemType}, que cubra {requirements}, con un presupuesto de {budget}, y que sea {platform}. ¿Es correcto? Por favor responde sí o no.",
+    ],
+    thanks: [
+      "¡Gracias por usar nuestro asistente! Si necesitas más ayuda, no dudes en escribirnos.",
+    ],
+    default: ["Lo siento, no entendí eso. Por favor, responde con información válida."],
   };
 
   useEffect(() => {
@@ -42,105 +43,50 @@ function App() {
     const lowerMessage = userMessage.toLowerCase();
 
     switch (currentStep) {
-
-
       case "personName":
-        setCurrentStep("identification");
-        return predefinedOptions.identification.map(msg => msg.replace("{name}", lowerMessage));
+        setCurrentStep("systemType");
+        return [`Encantado de conocerte, ${userMessage}.`, ...predefinedOptions.systemType];
 
-      case "day":
-        if (["lunes", "martes", "miércoles", "jueves", "viernes", "sábado"].some((day) => lowerMessage.includes(day))) {
-          const selectedDay = lowerMessage.split(" ")[0]; 
-          setCurrentStep("dayConfirmation");
-          setResponses((prev) => [...prev, selectedDay]);
-          return predefinedOptions.dayConfirmation.map(msg => msg.replace("{day}", selectedDay)); 
-        }
-        break;
+      case "systemType":
+        setResponses((prev) => [...prev, userMessage]);
+        setCurrentStep("requirements");
+        return predefinedOptions.requirements;
 
-      case "dayConfirmation":
-        if (lowerMessage.includes("si")) {
-          setCurrentStep("hour");
-          return predefinedOptions.hour;
-        } else if (lowerMessage.includes("no")) {
-          setCurrentStep("day");
-          return predefinedOptions.day;
-        }
-        break;
+      case "requirements":
+        setResponses((prev) => [...prev, userMessage]);
+        setCurrentStep("budget");
+        return predefinedOptions.budget;
 
-      case "hour":
-        if (["1", "2", "3"].some((hour) => lowerMessage.includes(hour))) {
+      case "budget":
+        setResponses((prev) => [...prev, userMessage]);
+        setCurrentStep("platform");
+        return predefinedOptions.platform;
 
-          const selectedHour = Hours.hasOwnProperty(lowerMessage) ? Hours[parseInt(lowerMessage)] : "Horario no disponible";
-          
-          // Guardar la opción seleccionada
-          setCurrentStep("hourConfirmation");
-          setResponses((prev) => [...prev, selectedHour]);
-          console.log(responses);
-          return predefinedOptions.hourConfirmation.map(msg => msg.replace("{hour}", selectedHour));
-        }
-        break;
-
-      case "hourConfirmation":
-        if (lowerMessage.includes("si")) {
-          setCurrentStep("address");
-          return predefinedOptions.address;
-        } else if (lowerMessage.includes("no")) {
-          setCurrentStep("hour");
-          return predefinedOptions.hour;
-        }
-        break;
-
-      case "address":
-        if (lowerMessage.trim().length > 0) {
-          const addressInput = lowerMessage; // Guardar la dirección ingresada
-          setCurrentStep("addressConfirmation");
-          setResponses((prev) => [...prev, addressInput]);
-          return predefinedOptions.addressConfirmation.map(msg => msg.replace("{address}", addressInput));
-        }
-        break;
-
-      case "addressConfirmation":
-        if (lowerMessage.includes("si")) {
-          setCurrentStep("confirmation");
-          return predefinedOptions.confirmation;
-        } else if (lowerMessage.includes("no")) {
-          setCurrentStep("address");
-          return predefinedOptions.address;
-        }
-        break;
-
-      case "identification":
-        if (/^\d+$/.test(lowerMessage)) { // Verifica si es un número válido
-          const idInput = lowerMessage; // Guardar el número de identificación
-          setCurrentStep("identificationConfirmation");
-          setResponses((prev) => [...prev, idInput]);
-          return predefinedOptions.identificationConfirmation.map(msg => msg.replace("{id}", idInput));
-        }
-        break;
-
-      case "identificationConfirmation":
-        if (lowerMessage.includes("si")) {
-          setCurrentStep("day");
-          return predefinedOptions.day;
-        } else if (lowerMessage.includes("no")) {
-          setCurrentStep("identification");
-          return predefinedOptions.identification;
-        }
-        break;
+      case "platform":
+        setResponses((prev) => [...prev, userMessage]);
+        const [systemType, requirements, budget] = responses;
+        setCurrentStep("confirmation");
+        return predefinedOptions.confirmation.map((msg) =>
+          msg
+            .replace("{systemType}", systemType || "N/A")
+            .replace("{requirements}", requirements || "N/A")
+            .replace("{budget}", budget || "N/A")
+            .replace("{platform}", userMessage || "N/A")
+        );
 
       case "confirmation":
-        if (lowerMessage.includes("si")) {
+        if (lowerMessage.includes("s")) {
           setCurrentStep("end");
-          return ["¡Perfecto! La visita ha sido programada con éxito. Gracias por usar nuestro servicio."];
+          return predefinedOptions.thanks;
         } else if (lowerMessage.includes("no")) {
-          setCurrentStep("day");
-          return predefinedOptions.day;
+          setCurrentStep("systemType");
+          return predefinedOptions.systemType;
         }
-        return [""];
+        break;
 
       case "end":
-        return [""];
-      
+        return predefinedOptions.thanks;
+
       default:
         return predefinedOptions.default;
     }
@@ -167,23 +113,17 @@ function App() {
     setNewMessage("");
   };
 
- return (
+  return (
     <div className="chatbot-app">
-      <div className="chat-header">Asistente Virtual Servicio Tecnico</div>
+      <div className="chat-header">Asistente Virtual - Sistemas de Información</div>
 
-
-      
       <div className="chat-messages">
-      {messages.map((message, index) => (
-    <div key={index} className={`chat-bubble ${message.sender === "user" ? "user-bubble" : "bot-bubble"}`}>
-      {message.sender === "bot" && (
-        <img src= {avatar} alt="Bot Avatar" className="bot-image" />
-      )}
-      <div className="message-content">
-        {message.text}
-      </div>
-    </div>
-  ))}
+        {messages.map((message, index) => (
+          <div key={index} className={`chat-bubble ${message.sender === "user" ? "user-bubble" : "bot-bubble"}`}>
+            {message.sender === "bot" && <img src={avatar} alt="Bot Avatar" className="bot-image" />}
+            <div className="message-content">{message.text}</div>
+          </div>
+        ))}
         <div ref={messagesEndRef} /> {/* Elemento para hacer scroll */}
       </div>
 
